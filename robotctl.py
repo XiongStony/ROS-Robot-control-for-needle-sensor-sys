@@ -1,19 +1,21 @@
 import numpy as np
 import math
 # import modern_robotics as mr
-from niryo_robot_python_ros_wrapper import (NiryoRosWrapper,
-                                            JointsPosition,
-                                            Pose,
-                                            ArmMoveCommand,
-                                            )
-
-class NiryoRobot(NiryoRosWrapper):
-    def letsmove(self,target:Pose,linear:bool = None,*args,**kwargs):
-        cmd = ArmMoveCommand.LINEAR_POSE if linear else None
-        code,msg = self.move(target,move_cmd=cmd,*args,**kwargs)
+# from niryo_robot_python_ros_wrapper import (NiryoRosWrapper, # pyright: ignore[reportMissingImports]
+#                                             Pose,
+#                                             ArmMoveCommand,
+#                                             )
+from pyniryo import (NiryoRobot,
+                    PoseObject,
+                    JointsPosition,
+                    Command
+                    )
+class PynRobot(NiryoRobot):
+    def letsmove(self,target:PoseObject,linear:bool = False,*args,**kwargs):
+        msg = self.move(target,linear=linear,*args,**kwargs)
         print(f"Done: {msg}")
-        return code
-    def insertionpose(self, prepose:Pose,length = 0.0, axis:str = 'x'):
+        return msg
+    def insertionpose(self, prepose:PoseObject,length = 0.0, axis:str = 'x'):
         R_x = np.array([[1, 0, 0],
                         [0, math.cos(prepose.roll), -math.sin(prepose.roll)],
                         [0, math.sin(prepose.roll), math.cos(prepose.roll)]])
@@ -29,7 +31,7 @@ class NiryoRobot(NiryoRosWrapper):
         col_idx = {'x': 0, 'y': 1, 'z': 2}[axis]
         direction = R[:, col_idx] / np.linalg.norm(R[:, col_idx]) 
         dx, dy, dz = length*direction
-        newpose = Pose(
+        newpose = PoseObject(
             x = prepose.x + dx,
             y = prepose.y + dy,
             z = prepose.z + dz,
@@ -38,6 +40,37 @@ class NiryoRobot(NiryoRosWrapper):
             yaw=prepose.yaw
             )
         return newpose
+# class NiryoRobotWrapper(NiryoRosWrapper):
+#     def letsmove(self,target:Pose,linear:bool = None,*args,**kwargs):
+#         cmd = ArmMoveCommand.LINEAR_POSE if linear else None
+#         code,msg = self.move(target,move_cmd=cmd,*args,**kwargs)
+#         print(f"Done: {msg}")
+#         return code
+#     def insertionpose(self, prepose:Pose,length = 0.0, axis:str = 'x'):
+#         R_x = np.array([[1, 0, 0],
+#                         [0, math.cos(prepose.roll), -math.sin(prepose.roll)],
+#                         [0, math.sin(prepose.roll), math.cos(prepose.roll)]])
+        
+#         R_y = np.array([[math.cos(prepose.pitch),0,math.sin(prepose.pitch)],
+#                        [0,1,0],
+#                        [-math.sin(prepose.pitch),0,math.cos(prepose.pitch)]])
+        
+#         R_z = np.array([[math.cos(prepose.yaw),-math.sin(prepose.yaw),0],
+#                         [math.sin(prepose.yaw),math.cos(prepose.yaw),0],
+#                         [0, 0, 1]])
+#         R = R_z @ R_y @ R_x
+#         col_idx = {'x': 0, 'y': 1, 'z': 2}[axis]
+#         direction = R[:, col_idx] / np.linalg.norm(R[:, col_idx]) 
+#         dx, dy, dz = length*direction
+#         newpose = Pose(
+#             x = prepose.x + dx,
+#             y = prepose.y + dy,
+#             z = prepose.z + dz,
+#             roll=prepose.roll,
+#             pitch=prepose.pitch,
+#             yaw=prepose.yaw
+#             )
+#         return newpose
 
 def fourD_invKinematics(xFinal, yFinal, zFinal, theta):
     ELBOW_TO_WRIST = 100     # L2 (mm)
